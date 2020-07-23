@@ -1,0 +1,9 @@
+[* This program will print the product of two numbers *]
+$$
+integer first;
+integer second;
+get(first);
+get(second);
+first = first * second;
+put(first);
+$$

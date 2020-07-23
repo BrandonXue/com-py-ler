@@ -1,0 +1,92 @@
+[**
+ * This program will approximate the square root of
+ * a decimal number and print the result
+ * as a binary number
+  **]
+
+$$
+[***** declarations *****]
+integer one_constant; [* a hard-coded value of one, used for printing *]
+integer zero_constant; [* a hard-coded value of zero, used for printing *]
+integer i;
+integer n;
+integer prev;
+integer temp;
+integer root;
+boolean loop;
+
+[***** statements *****]
+one_constant = 1;
+zero_constant = 0;
+get(n);
+
+[* First find the square root by using a loop
+   and testing the squares until the difference
+   reaches a minimum *]
+
+prev = n; [* This is the previous difference between
+              our square and the actual number. First
+              set it to a really high value *]
+i = 0; [* this is the square root we are testing *]
+loop = true;
+while (loop == true) {
+    [* set temp to the difference of i^2 and n *]
+    temp = i * i;
+    if (n > temp)
+        temp = n - temp;
+    otherwise
+        temp = temp - n;
+    fi
+
+    [* If current difference exceeds previous, the last number was optimal
+       and we should break out of the loop. Otherwise, increment i and
+       keep looping. *]
+    if (temp > prev) {
+        loop = False;
+        i = i - 1;
+    } otherwise {
+        prev = temp;
+        i = i + 1;
+    } fi
+}
+
+[* Now i should contain the closest approximation to the square root *]
+
+root = i; [* Move sqrt to root *]
+temp = 0; [* Repurpose temp as a bit buffer for storing flipped binary result *]
+i = 0; [* Repurpose i to count the iterations of the loop. This tells us length of bit string *]
+while (root > 0) {
+    prev = root; [* Repurpose prev to store the value of root before division *]
+    root = root / 2; [* Integer division on root *]
+
+    [* If root * 2 is equal to its previous value, then root was even
+       and we don't do anything. Otherwise if root was odd, add a bit
+       to the bit buffer *]
+    if (root * 2 == prev)
+        root = root; [* no-op *]
+    otherwise
+        temp = temp + 1;
+    fi
+    
+    temp = temp * 2; [* Now shift the bits to the left by multiplying by 2. 
+                        this makes space for the next bit to be added. *]
+    i = i + 1; [* increment the number of iterations *]
+}
+
+temp = temp / 2; [* We will always shift left one too many times,
+                    so shift back by dividing by 2 *]
+
+[* now i holds the length of the bitstring and temp holds the bits backwards *]
+while (i > 0) {
+    i = i - 1; [* decrement i so we only loop for the length of the bitstring *]
+
+    [* if temp is even, rightmost bit is 0, so print a 0.
+       otherwise, rightmost bit is 1, so print a 1. *]
+    if (((temp / 2) * 2) == temp)
+        put(one_constant);
+    otherwise
+        put(zero_constant);
+    fi
+    temp = temp / 2;
+}
+$$

@@ -1,0 +1,118 @@
+Token: Separator    Lexeme: $$
+    <Rat20SU> -> $$ <Opt Declaration List> <Statement List> $$
+Token: Keyword      Lexeme: integer
+    <Opt Declaration List> -> <Declaration List>
+    <Declaration List> -> <Declaration> ; <Declaration List Split>
+    <Declaration> -> <Qualifier> <Identifier>
+    <Qualifier> -> integer
+Token: Identifier   Lexeme: ageOne
+Token: Separator    Lexeme: ;
+Token: Keyword      Lexeme: integer
+    <Declaration List Split> -> <Declaration List>
+    <Declaration List> -> <Declaration> ; <Declaration List Split>
+    <Declaration> -> <Qualifier> <Identifier>
+    <Qualifier> -> integer
+Token: Identifier   Lexeme: ageTwo
+Token: Separator    Lexeme: ;
+Token: Keyword      Lexeme: integer
+    <Declaration List Split> -> <Declaration List>
+    <Declaration List> -> <Declaration> ; <Declaration List Split>
+    <Declaration> -> <Qualifier> <Identifier>
+    <Qualifier> -> integer
+Token: Identifier   Lexeme: comparison
+Token: Separator    Lexeme: ;
+Token: Keyword      Lexeme: get
+    <Declaration List Split> -> epsilon
+    <Statement List> -> <Statement> <Statement List Split>
+    <Statement> -> <Get>
+    <Get> -> get ( <Identifier> ) ;
+Token: Separator    Lexeme: (
+Token: Identifier   Lexeme: ageOne
+Token: Separator    Lexeme: )
+Token: Separator    Lexeme: ;
+Token: Keyword      Lexeme: get
+    <Statement List Split> -> <Statement List>
+    <Statement List> -> <Statement> <Statement List Split>
+    <Statement> -> <Get>
+    <Get> -> get ( <Identifier> ) ;
+Token: Separator    Lexeme: (
+Token: Identifier   Lexeme: ageTwo
+Token: Separator    Lexeme: )
+Token: Separator    Lexeme: ;
+Token: Keyword      Lexeme: if
+    <Statement List Split> -> <Statement List>
+    <Statement List> -> <Statement> <Statement List Split>
+    <Statement> -> <If>
+    <If> -> if ( <Condition> ) <Statement> <If Split>
+Token: Separator    Lexeme: (
+Token: Identifier   Lexeme: ageOne
+    <Expression> -> <Term> <Expression Prime>
+    <Term> -> <Factor> <Term Prime>
+    <Factor> -> <Primary>
+    <Primary> -> <Identifier>
+Token: Operator     Lexeme: >
+    <Term Prime> -> epsilon
+    <Expression Prime> -> epsilon
+    <Relop> -> >
+Token: Identifier   Lexeme: ageTwo
+    <Expression> -> <Term> <Expression Prime>
+    <Term> -> <Factor> <Term Prime>
+    <Factor> -> <Primary>
+    <Primary> -> <Identifier>
+Token: Separator    Lexeme: )
+    <Term Prime> -> epsilon
+    <Expression Prime> -> epsilon
+Token: Identifier   Lexeme: comparison
+    <Statement> -> <Assign>
+    <Assign> -> <Identifier> = <Expression> ;
+Token: Operator     Lexeme: =
+Token: Identifier   Lexeme: ageOne
+    <Expression> -> <Term> <Expression Prime>
+    <Term> -> <Factor> <Term Prime>
+    <Factor> -> <Primary>
+    <Primary> -> <Identifier>
+Token: Operator     Lexeme: -
+    <Term Prime> -> epsilon
+    <Expression Prime> -> - <Term> <Expression Prime>
+Token: Identifier   Lexeme: ageTwo
+    <Term> -> <Factor> <Term Prime>
+    <Factor> -> <Primary>
+    <Primary> -> <Identifier>
+Token: Separator    Lexeme: ;
+    <Term Prime> -> epsilon
+    <Expression Prime> -> epsilon
+Token: Keyword      Lexeme: otherwise
+    <If Split> -> otherwise <Statement> fi
+Token: Identifier   Lexeme: comparison
+    <Statement> -> <Assign>
+    <Assign> -> <Identifier> = <Expression> ;
+Token: Operator     Lexeme: =
+Token: Identifier   Lexeme: ageTwo
+    <Expression> -> <Term> <Expression Prime>
+    <Term> -> <Factor> <Term Prime>
+    <Factor> -> <Primary>
+    <Primary> -> <Identifier>
+Token: Operator     Lexeme: -
+    <Term Prime> -> epsilon
+    <Expression Prime> -> - <Term> <Expression Prime>
+Token: Identifier   Lexeme: ageOne
+    <Term> -> <Factor> <Term Prime>
+    <Factor> -> <Primary>
+    <Primary> -> <Identifier>
+Token: Separator    Lexeme: ;
+    <Term Prime> -> epsilon
+    <Expression Prime> -> epsilon
+Token: Keyword      Lexeme: fi
+Token: Keyword      Lexeme: put
+    <Statement List Split> -> <Statement List>
+    <Statement List> -> <Statement> <Statement List Split>
+    <Statement> -> <Put>
+    <Put> -> put ( <Identifier> ) ;
+Token: Separator    Lexeme: (
+Token: Identifier   Lexeme: comparison
+Token: Separator    Lexeme: )
+Token: Separator    Lexeme: ;
+Token: Separator    Lexeme: $$
+    <Statement List Split> -> epsilon
+    
+Rat20SU Accepted

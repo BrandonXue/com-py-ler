@@ -1,0 +1,18 @@
+[* This program will compare two users ages inputted by them *]
+
+$$
+[* declarations *]
+integer ageOne;
+integer ageTwo;
+integer comparison;
+
+[* statements *]
+get(ageOne);
+get(ageTwo);
+if (ageOne > ageTwo)
+    comparison = ageOne - ageTwo;
+otherwise
+    comparison = ageTwo - ageOne;
+fi
+put(comparison);
+$$
