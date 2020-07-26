@@ -12,11 +12,11 @@ A compiler for the Rat20SU language that creates p-code, and a Rat20SU virtual m
    Only the "Required files" and "Input files" are needed to test the program.
    Here is a list of all the files:
     - "Required files" to run the program:
-	- ratify.py		----	the main script file
+        - ratify.py		----	the main script file
         - lexer_constants.py	----	set definitions & constants
         - rat_lexer.py		----	the RatLexer & Token classes
-	- rat_parser.py		----	the RatParser class
-	- reader.py		----	a wrapper class for file input
+        - rat_parser.py		----	the RatParser class
+        - reader.py		----	a wrapper class for file input
 
     - "Input files" for testing the program:
         - test1.rat        ----    test file 1, <10 lines
@@ -34,13 +34,14 @@ A compiler for the Rat20SU language that creates p-code, and a Rat20SU virtual m
 
 4. Using Python3, Run the main script file Ratify.py.
     - Run the program and specify the input file. If not specified, the program will prompt you once it starts running.
-    - Optionally provide a "-o" flag and then type the output filename as the next argument.
-    - Optionally provide a "-ids" flag to print the symbol table to stdout
-    - Optionally provide a "-lex" flag to print a .lex output file
-    - Optionally provide a "-parse" flag to print a .parse output file
+    - By default, the output filename will be the same as the input, but with a .out file extension.
+        - Optionally provide a "-o" flag and then type the output filename as the next argument.
+        - Optionally provide a "-ids" flag to print the symbol table to stdout
+        - Optionally provide a "-lex" flag to print a .lex output file
+        - Optionally provide a "-parse" flag to print a .parse output file
 
-    - Tuffix/Linux: python3 Ratify.py test1.txt myoutput.txt
-    - Windows: py -3 Ratify.py test1.txt myoutput.txt
+    - Tuffix/Linux: python3 ratify.py test1.rat -o test1.out
+    - Windows: py -3 ratify.py test1.rat -o test1.out
 
     - If no command line arguments are given, the program will prompt you for file names. Please follow the command prompt.
     - The input file must match your source code file name. The output file must also be provided. For the output file name, be careful not to use the name of an existing file, otherwise its contents will be replaced. 
