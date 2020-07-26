@@ -33,7 +33,8 @@ A compiler for the Rat20SU language that creates p-code, and a Rat20SU virtual m
     - Windows: cd ...path\to\project\directory 
 
 4. Using Python3, Run the main script file Ratify.py.
-    - Run the program and specify the input file. If not specified, the program will prompt you once it starts running.
+    - Run the program and specify the input file.
+    - If command line arguments are not given, the program will prompt you once it starts running. In this case, please follow the command prompt.
     - By default, the output filename will be the same as the input, but with a .out file extension.
         - Optionally provide a "-o" flag and then type the output filename as the next argument.
         - Optionally provide a "-ids" flag to print the symbol table to stdout
