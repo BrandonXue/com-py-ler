@@ -19,21 +19,26 @@ A compiler for the Rat20SU language that creates p-code, and a Rat20SU virtual m
 	- reader.py		----	a wrapper class for file input
 
     - "Input files" for testing the program:
-        - test1.txt			----	test file 1, <10 lines
-        - test2.txt			----	test file 2, <20 lines
-        - test3.txt			----	test file 3, >20 lines
+        - test1.rat        ----    test file 1, <10 lines
+        - test2.rat        ----    test file 2, <20 lines
+        - test3.rat        ----    test file 3, >20 lines
 
     - "Output files" for the given input files:
-        - test1-out.txt     ----    output of test file 1
-        - test2-out.txt     ----    output of test file 2
-        - test3-out.txt     ----    output of test file 3
+        - test1.out        ----    p-code for test1.rat
+        - test2.out        ----    p-code for test2.rat
+        - test3.out        ----    p-code for test3.rat
 
 3. Navigate your terminal emulator to the directory containing the project files.
     - Tuffix/Linux: cd ...path/to/project/directory
     - Windows: cd ...path\to\project\directory 
 
 4. Using Python3, Run the main script file Ratify.py.
-   You can specify the input and output files (in that order) as command line arguments.
+    - Run the program and specify the input file. If not specified, the program will prompt you once it starts running.
+    - Optionally provide a "-o" flag and then type the output filename as the next argument.
+    - Optionally provide a "-ids" flag to print the symbol table to stdout
+    - Optionally provide a "-lex" flag to print a .lex output file
+    - Optionally provide a "-parse" flag to print a .parse output file
+
     - Tuffix/Linux: python3 Ratify.py test1.txt myoutput.txt
     - Windows: py -3 Ratify.py test1.txt myoutput.txt
 
