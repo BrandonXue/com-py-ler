@@ -6,6 +6,7 @@ _PRINT_PRODUCTIONS_ = True
 
 INTEGER_T = 0
 BOOLEAN_T = 1
+NONE_T = 2
 
 # Used these constants to encode the instruction type
 # as an integer instead of string to save space
@@ -69,15 +70,26 @@ class RatParser:
         self.la = RatLexer(infile_name, out_lex, lex_flag)
         self.token = None
         self.lexer()
+
+        # Prepare Error Log
+        self.errors = []
     
-    # Used to notify the user of an unexpected token. This will print
-    # an error message including the current token held by RatParser.
-    def notify_error(self):
-        print("\tError: Unexpected token:")
-        print("\t" + self.token.__repr__())
-        self.close_files()
-        exit()
-    
+    # Adds an error and/or a token to the error log
+    def notify_error(self, msg="", token=None):
+        self.errors.append((msg, token))
+
+    # Print all errors in the log
+    def print_errors(self):
+        for err in self.errors:
+            print("\t" + err[0])
+            if err[1] != None:
+                print("\t" + err[1].__repr__())
+            print()
+
+    # Find out if there are any errors
+    def has_error(self):
+        return len(self.errors) > 0
+
     # Close both the input and output files.
     def close_files(self):
         if (_PRINT_PRODUCTIONS_ or _PRINT_TOKENS_) and self.parse_flag:
@@ -146,8 +158,9 @@ class RatParser:
             return self.sym_table[id][0]
         return -1
 
+    # Takes an identifier and returns its type as an integer
     def get_type(self, id):
-        if is_id(id):
+        if self.is_id(id):
             return self.sym_table[id][1]
         return -1
 
@@ -172,9 +185,12 @@ class RatParser:
     def output_instr(self):
         for instr in self.instructions:
             self.out_code.write(str(instr[0]).ljust(6))
-            type_str = INSTR_TYPE[instr[1]]
-            self.out_code.write(type_str.ljust(8))
-            self.out_code.write(str(instr[2]))
+            instr_str = INSTR_TYPE[instr[1]]
+            self.out_code.write(instr_str.ljust(10))
+            arg = str(instr[2])
+            if arg != "nil":
+                self.out_code.write(str(instr[2]))
+            self.out_code.write("\n")
 
 
     ## =====================================================================================
@@ -198,7 +214,7 @@ class RatParser:
             if self.token.value == "$$":
                 self.write_production("\nRat20SU Accepted")
                 return
-        self.notify_error()
+        self.notify_error("Error: Expected $$", self.token)
 
     # <Opt Declaration List>
     def opt_declaration_list(self):
@@ -220,7 +236,10 @@ class RatParser:
                 self.lexer()
                 self.declaration_list_split()
                 return
-        self.notify_error()
+            else:
+                self.notify_error("Error: Expected ;", self.token)
+        else:
+            self.notify_error("Bug: declaration_list()")
 
     # <Declaration>
     def declaration(self):
@@ -229,10 +248,13 @@ class RatParser:
             tok_type = self.qualifier()
             if self.token.type == TokenIdentifier:
                 tok_id = self.token.value
-                self.decl_id(tok_id, tok_type)
+                if tok_id != NONE_T:
+                    self.decl_id(tok_id, tok_type)
                 self.lexer()
-                return
-        self.notify_error()
+            else:
+                self.notify_error("Error: Expected identifier", self.token)
+        else:
+            self.notify_error("Bug: declaration()")
 
     # <Qualifier>
     def qualifier(self):
@@ -245,8 +267,9 @@ class RatParser:
             self.lexer()
             return BOOLEAN_T
         else:
-            self.notify_error()
-            return None
+            # Technically not reachable in PRDP
+            self.notify_error("Error: Expected integer or boolean qualifier")
+            return NONE_T
 
     # <Declaration List Split>
     # This rule comes from factoring <Declaration List>
@@ -266,7 +289,7 @@ class RatParser:
             self.statement()
             self.statement_list_split()
         else:
-            self.notify_error()
+            self.notify_error("Error: Expected statement", self.token)
 
     # <Statement>
     def statement(self):
@@ -289,7 +312,7 @@ class RatParser:
             self.write_production("<Statement> -> <While>")
             self.while_rule()
         else:
-            self.notify_error()
+            self.notify_error("Bug: statement()")
 
     # <Statement List Split>
     # This rule comes from factoring <Statement List>
@@ -310,23 +333,32 @@ class RatParser:
             self.statement_list()
             if self.token.value == "}":
                 self.lexer()
-                return
-        self.notify_error()
+            else:
+                self.notify_error("Error: Expected }", self.token)
+        else:
+            self.notify_error("Bug: compound()")
 
     # <Assign>
     def assign(self):
         if self.token.type == TokenIdentifier:
-            tok_id = self.token.value
+            tok = self.token
             self.write_production("<Assign> -> <Identifier> = <Expression> ;")
             self.lexer()
             if self.token.value == "=":
                 self.lexer()
                 self.expression()
                 if self.token.value == ";":
-
+                    addr = self.get_address(tok.value)
+                    if addr == -1:
+                        self.notify_error("Error: Use of undeclared identifier", tok)
+                    self.gen_instr(POPM, addr)
                     self.lexer()
-                    return
-        self.notify_error()
+                else:
+                    self.notify_error("Error: Expected ;", self.token)
+            else:
+                self.notify_error("Error: Expected =", self.token)
+        else:
+            self.notify_error("Bug: assign()")
 
     # <If>
     def if_rule(self):
@@ -340,8 +372,12 @@ class RatParser:
                     self.lexer()
                     self.statement()
                     self.if_split()
-                    return
-        self.notify_error()
+                else:
+                    self.notify_error("Error: Expected )", self.token)
+            else:
+                self.notify_error("Error: Expected (", self.token)
+        else:
+            self.notify_error("Bug: if_rule()")
 
     # <If_Split>
     # This rule comes from factoring <If>
@@ -349,15 +385,16 @@ class RatParser:
         if self.token.value == "fi":
             self.write_production("<If Split> -> fi")
             self.lexer()
-            return
         elif self.token.value == "otherwise":
             self.write_production("<If Split> -> otherwise <Statement> fi")
             self.lexer()
             self.statement()
             if self.token.value == "fi":
                 self.lexer()
-                return
-        self.notify_error()
+            else:
+                self.notify_error("Error: Expected fi", self.token)
+        else:
+            self.notify_error("Error: Expected fi or otherwise", self.token)
 
     # <Put>
     def put(self):
@@ -366,14 +403,28 @@ class RatParser:
             self.lexer()
             if self.token.value == "(":
                 self.lexer()
+                tok = self.token
                 if self.token.type == TokenIdentifier:
                     self.lexer()
                     if self.token.value == ")":
                         self.lexer()
                         if self.token.value == ";":
                             self.lexer()
-                            return
-        self.notify_error()
+                            addr = self.get_address(tok.value)
+                            if addr == -1:
+                                self.notify_error("Error: Use of undeclared identifier", tok)
+                            self.gen_instr(PUSHM, addr)
+                            self.gen_instr(STDOUT, "nil")
+                        else:
+                            self.notify_error("Error: Expected ;", self.token)
+                    else:
+                        self.notify_error("Error: Expected )", self.token)
+                else:
+                    self.notify_error("Error: Expected identifier", self.token)
+            else:
+                self.notify_error("Error: Expected (", self.token)
+        else:
+            self.notify_error("Bug: put")
 
     # <Get>
     def get(self):
@@ -382,14 +433,28 @@ class RatParser:
             self.lexer()
             if self.token.value == "(":
                 self.lexer()
+                tok = self.token
                 if self.token.type == TokenIdentifier:
                     self.lexer()
                     if self.token.value == ")":
                         self.lexer()
                         if self.token.value == ";":
                             self.lexer()
-                            return
-        self.notify_error()
+                            addr = self.get_address(tok.value)
+                            if addr == -1:
+                                self.notify_error("Error: Use of undeclared identifier", tok)
+                            self.gen_instr(STDIN, "nil")
+                            self.gen_instr(POPM, addr)
+                        else:
+                            self.notify_error("Error: Expected ;", self.token)
+                    else:
+                        self.notify_error("Error: Expected )", self.token)
+                else:
+                    self.notify_error("Error: Expected identifier", self.token)
+            else:
+                self.notify_error("Error: Expected (", self.token)
+        else:
+            self.notify_error("Bug: get")
     
     # <While>
     def while_rule(self):
@@ -411,24 +476,30 @@ class RatParser:
             "true", "false", "(", "-"
             } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
             self.expression()
-            self.relop()
+            op = self.relop()
             self.expression()
+            self.gen_instr(op, "nil")
         else:
-            self.notify_error()
+            self.notify_error("Error: Expected start of expression", self.token)
 
     # <Relop>
     def relop(self):
         if self.token.value == "==":
             self.write_production("<Relop> -> ==")
             self.lexer()
+            return EQU
         elif self.token.value == ">":
             self.write_production("<Relop> -> >")
             self.lexer()
+            return GRT
         elif self.token.value == "<":
             self.write_production("<Relop> -> <")
             self.lexer()
+            return LES
         else:
-            self.notify_error()
+            self.notify_error("Error: Expected relop", self.token)
+            # If there's an error, use equal operator by default
+            return EQU
 
     # <Expression>
     def expression(self):
@@ -439,7 +510,7 @@ class RatParser:
             self.term()
             self.expression_prime()
         else:
-            self.notify_error()
+            self.notify_error("Error")
 
     # <Expression Prime>
     # This rule comes from fixing the direct left recursion of <Expression>
@@ -448,11 +519,13 @@ class RatParser:
             self.write_production("<Expression Prime> -> + <Term> <Expression Prime>")
             self.lexer()
             self.term()
+            self.gen_instr(ADD, "nil")
             self.expression_prime()
         elif self.token.value == "-":
             self.write_production("<Expression Prime> -> - <Term> <Expression Prime>")
             self.lexer()
             self.term()
+            self.gen_instr(SUB, "nil")
             self.expression_prime()
         else:
             self.write_production("<Expression Prime> -> epsilon")
@@ -466,7 +539,7 @@ class RatParser:
             self.factor()
             self.term_prime()
         else:
-            self.notify_error()
+            self.notify_error("Error: Expected a factor", self.token)
 
     # <Term Prime>
     # This rule comes from fixing the direct left recursion of <Term>
@@ -475,50 +548,74 @@ class RatParser:
             self.write_production("<Term Prime> -> * <Factor> <Term Prime>")
             self.lexer()
             self.factor()
+            self.gen_instr(MUL, "nil")
             self.term_prime()
         elif self.token.value == "/":
             self.write_production("<Term Prime> -> / <Factor> <Term Prime>")
             self.lexer()
             self.factor()
+            self.gen_instr(DIV, "nil")
             self.term_prime()
         else:
             self.write_production("<Term Prime> -> epsilon")
 
     # <Factor>
     def factor(self):
+        tok = self.token
         if self.token.value == "-":
             self.write_production("<Factor> -> - <Primary>")
             self.lexer()
-            self.primary()
+            primary_type = self.primary()
+            if primary_type == BOOLEAN_T:
+                self.notify_error("Error: Multiplying boolean by -1", tok)
+            # Primary will be on top of stack. Push a -1, then MUL to apply the negative
+            self.gen_instr(PUSHI, -1)
+            self.gen_instr(MUL, "nil")
         elif self.token.value in {
             "true", "false", "("
             } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
             self.write_production("<Factor> -> <Primary>")
             self.primary()
         else:
-            self.notify_error()
+            self.notify_error("Error: Expected a factor", self.token)
 
     # <Primary>
     def primary(self):
         if self.token.type == TokenIdentifier:
             self.write_production("<Primary> -> <Identifier>")
+            addr = self.get_address(self.token.value)
+            if addr == -1:
+                self.notify_error("Error: Use of undeclared identifier", self.token)
+            self.gen_instr(PUSHM, addr)
+            tok_id = self.token.value
             self.lexer()
+            return INTEGER_T if self.get_type(tok_id) == INTEGER_T else BOOLEAN_T
         elif self.token.type == TokenInteger:
             self.write_production("<Primary> -> <Integer>")
+            self.gen_instr(PUSHI, self.token.value)
             self.lexer()
+            return INTEGER_T
         elif self.token.value == "(":
             self.write_production("<Primary> -> ( <Expression> )")
             self.lexer()
-            self.expression()
+            expr_type = self.expression()
             if self.token.value == ")":
                 self.lexer()
+                return expr_type
             else:
                 self.notify_error()
         elif self.token.value == "true":
             self.write_production("<Primary> -> true")
+            # 1 represents true
+            self.gen_instr(PUSHI, 1)
             self.lexer()
+            return BOOLEAN_T
         elif self.token.value == "false":
             self.write_production("<Primary> -> false")
+            # 0 represents false
+            self.gen_instr(PUSHI, 0)
             self.lexer()
+            return BOOLEAN_T
         else:
-            self.notify_error()
+            self.notify_error("Error: Invalid primary", self.token)
+            return None

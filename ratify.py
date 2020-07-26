@@ -78,7 +78,10 @@ def main():
 
     # Find the file name without extension
     ext_index = infile_name.rfind(".")
-    fname = infile_name[:ext_index]
+    if ext_index == -1:
+        fname = infile_name
+    else:
+        fname = infile_name[:ext_index]
     # Find the p-code output file name
     if out_code == "":
         out_code = fname + ".out"
@@ -104,6 +107,9 @@ def main():
 
     rp.output_instr() # Output p-code
 
+    if rp.has_error():
+        rp.print_errors()
+        
     if ids_flag: # if ids_flag is set, print the symbol table
         rp.print_ids()
 

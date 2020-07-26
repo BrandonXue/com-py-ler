@@ -243,4 +243,4 @@ class RatLexer:
             char = self.file.read(1)
 
         # Reached end of file
-        return self.create_token(state, lexeme)
+        return self.create_token(state, lexeme, self.file.char())
