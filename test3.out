@@ -1,0 +1,131 @@
+1     PUSHI     1
+2     POPM      5000
+3     PUSHI     0
+4     POPM      5001
+5     STDIN     
+6     POPM      5003
+7     PUSHM     5003
+8     POPM      5004
+9     PUSHI     0
+10    POPM      5002
+11    PUSHI     1
+12    POPM      5007
+13    LABEL     
+14    PUSHM     5007
+15    PUSHI     1
+16    EQU       
+17    JUMPZ     57
+18    PUSHM     5002
+19    PUSHM     5002
+20    MUL       
+21    POPM      5005
+22    PUSHM     5003
+23    PUSHM     5005
+24    GRT       
+25    JUMPZ     31
+26    PUSHM     5003
+27    PUSHM     5005
+28    SUB       
+29    POPM      5005
+30    JUMP      36
+31    LABEL     
+32    PUSHM     5005
+33    PUSHM     5003
+34    SUB       
+35    POPM      5005
+36    LABEL     
+37    PUSHM     5005
+38    PUSHM     5004
+39    GRT       
+40    JUMPZ     48
+41    PUSHI     0
+42    POPM      5007
+43    PUSHM     5002
+44    PUSHI     1
+45    SUB       
+46    POPM      5002
+47    JUMP      55
+48    LABEL     
+49    PUSHM     5005
+50    POPM      5004
+51    PUSHM     5002
+52    PUSHI     1
+53    ADD       
+54    POPM      5002
+55    LABEL     
+56    JUMP      13
+57    PUSHM     5002
+58    POPM      5006
+59    PUSHI     0
+60    POPM      5005
+61    PUSHI     0
+62    POPM      5002
+63    LABEL     
+64    PUSHM     5006
+65    PUSHI     0
+66    GRT       
+67    JUMPZ     98
+68    PUSHM     5006
+69    POPM      5004
+70    PUSHM     5006
+71    PUSHI     2
+72    DIV       
+73    POPM      5006
+74    PUSHM     5006
+75    PUSHI     2
+76    MUL       
+77    PUSHM     5004
+78    EQU       
+79    JUMPZ     83
+80    PUSHM     5006
+81    POPM      5006
+82    JUMP      88
+83    LABEL     
+84    PUSHM     5005
+85    PUSHI     1
+86    ADD       
+87    POPM      5005
+88    LABEL     
+89    PUSHM     5005
+90    PUSHI     2
+91    MUL       
+92    POPM      5005
+93    PUSHM     5002
+94    PUSHI     1
+95    ADD       
+96    POPM      5002
+97    JUMP      63
+98    PUSHM     5005
+99    PUSHI     2
+100   DIV       
+101   POPM      5005
+102   LABEL     
+103   PUSHM     5002
+104   PUSHI     0
+105   GRT       
+106   JUMPZ     131
+107   PUSHM     5002
+108   PUSHI     1
+109   SUB       
+110   POPM      5002
+111   PUSHM     5005
+112   PUSHI     2
+113   DIV       
+114   PUSHI     2
+115   MUL       
+116   PUSHM     5005
+117   EQU       
+118   JUMPZ     122
+119   PUSHM     5000
+120   STDOUT    
+121   JUMP      125
+122   LABEL     
+123   PUSHM     5001
+124   STDOUT    
+125   LABEL     
+126   PUSHM     5005
+127   PUSHI     2
+128   DIV       
+129   POPM      5005
+130   JUMP      102
+131   LABEL     

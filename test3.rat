@@ -42,7 +42,7 @@ while (loop == true) {
        and we should break out of the loop. Otherwise, increment i and
        keep looping. *]
     if (temp > prev) {
-        loop = False;
+        loop = false;
         i = i - 1;
     } otherwise {
         prev = temp;

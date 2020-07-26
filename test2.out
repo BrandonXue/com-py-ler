@@ -1,0 +1,22 @@
+1     STDIN     
+2     POPM      5000
+3     STDIN     
+4     POPM      5001
+5     PUSHM     5000
+6     PUSHM     5001
+7     GRT       
+8     JUMPZ     14
+9     PUSHM     5000
+10    PUSHM     5001
+11    SUB       
+12    POPM      5002
+13    JUMP      19
+14    LABEL     
+15    PUSHM     5001
+16    PUSHM     5000
+17    SUB       
+18    POPM      5002
+19    LABEL     
+20    PUSHM     5002
+21    STDOUT    
+22    LABEL     
