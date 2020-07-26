@@ -1,0 +1,10 @@
+1     STDIN     
+2     POPM      5000
+3     STDIN     
+4     POPM      5001
+5     PUSHM     5000
+6     PUSHM     5001
+7     MUL       
+8     POPM      5000
+9     PUSHM     5000
+10    STDOUT    
