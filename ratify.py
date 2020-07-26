@@ -24,9 +24,15 @@ def main():
     code_flag = False
     ids_flag = False
     infile_taken = False
-    for i in range(1, arg_count): # Starting from index 1 omits the script filename itself
+    for i in range(arg_count):
+        # Find invalid flags and ignore them
+        if argv[i].find("-") == 0 and argv[i] not in {"-lex", "-parse", "-ids", "-o"}:
+            pass
+        # Find the python script argument and ignore it
+        elif argv[i].find(".py") != -1:
+            pass
         # If the previous flag was -o, this argument will be treated as out_code name
-        if code_flag:
+        elif code_flag:
             out_code = argv[i]
             code_flag = False
         # If -lex flag detected, the program will create a .lex output
@@ -35,8 +41,8 @@ def main():
         # If -parse flag detected, the program will create a .parse output
         elif argv[i] == "-parse":
             parse_flag = True
-        # If -id flag is detected, the program will later print the symbol table to stdout
-        elif argv[i] == "-id":
+        # If -ids flag is detected, the program will later print the symbol table to stdout
+        elif argv[i] == "-ids":
             ids_flag = True
         # If -o flag detected, the next item will be treated as out_code name
         elif argv[i] == "-o":
@@ -50,7 +56,7 @@ def main():
             infile_taken = True
             infile_name = argv[i]
         else:
-            print("\tError: Input filename specified twice. Check if any flags are missing.")
+            print("\tError: Input filename detected twice. (Check if any flags are missing.)")
             exit()
 
 
@@ -67,10 +73,8 @@ def main():
         print("\nError: The specified input file does not exist.\n")
         return
 
-
-
     # ********** STEP TWO: **********
-    # Figure out all of the remaining file names
+    # Figure out all of the remaining file names and notify user
 
     # Find the file name without extension
     ext_index = infile_name.rfind(".")
@@ -83,7 +87,12 @@ def main():
     # Create the .lex output file name
     out_lex = fname + ".lex"
 
-
+    print("Input file:", infile_name)
+    if lex_flag:
+        print("Lexer output:", out_lex)
+    if parse_flag:
+        print("Parser output:", out_parse)
+    print("P-code output:", out_code)
 
     # ********** STEP THREE: **********
     # Begin running the compilation process
