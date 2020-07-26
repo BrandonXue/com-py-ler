@@ -4,20 +4,91 @@ from lexer_constants import *
 _PRINT_TOKENS_ = True
 _PRINT_PRODUCTIONS_ = True
 
+INTEGER_T = 0
+BOOLEAN_T = 1
+
+# Used these constants to encode the instruction type
+# as an integer instead of string to save space
+PUSHI = 1
+PUSHM = 2
+POPM = 3
+STDOUT = 4
+STDIN = 5
+ADD = 6
+SUB = 7
+MUL = 8
+DIV = 9
+GRT = 10
+LES = 11
+EQU = 12
+JUMPZ = 13
+JUMP = 14
+LABEL = 15
+
+# Use this dict to decode instruction types into a string
+# so that the correct output can be printed
+INSTR_TYPE = [
+    "INVALID",
+    "PUSHI", # I1
+    "PUSHM", # I2
+    "POPM",  # I3
+    "STDOUT",# I4
+    "STDIN", # I5
+    "ADD",   # I6
+    "SUB",   # I7
+    "MUL",   # I8
+    "DIV",   # I9
+    "GRT",   # I10
+    "LES",   # I11
+    "EQU",   # I12
+    "JUMPZ", # I13
+    "JUMP",  # I14
+    "LABEL"  # I15
+]
+
 class RatParser:
     # Constructor
     # Takes two file names, one for the source and one for the output.
     # The source file name will be passed to the RatLexer
-    def __init__(self, infile_name, outfile_name):
-        self.outfile = open(outfile_name, "w")
-        self.la = RatLexer(infile_name)
+    def __init__(self, infile_name, out_code, out_parse, out_lex, parse_flag, lex_flag):
+        # Prepare parsing output
+        self.parse_flag = parse_flag
+        if (_PRINT_PRODUCTIONS_ or _PRINT_TOKENS_) and parse_flag:
+            self.out_parse = open(out_parse, "w")
+
+        # Prepare symbol table
+        self.id_mem_addr = 5000
+        self.sym_table = {}
+
+        # TODO: Prepare ICG output
+        self.out_code = open(out_code, "w")
+        self.instructions = []
+        self.instr_addr = 1
+
+        # Prepare input
+        self.la = RatLexer(infile_name, out_lex, lex_flag)
         self.token = None
         self.lexer()
     
+    # Used to notify the user of an unexpected token. This will print
+    # an error message including the current token held by RatParser.
+    def notify_error(self):
+        print("\tError: Unexpected token:")
+        print("\t" + self.token.__repr__())
+        self.close_files()
+        exit()
+    
     # Close both the input and output files.
     def close_files(self):
-        self.outfile.close()
-        self.la.file.close()
+        if (_PRINT_PRODUCTIONS_ or _PRINT_TOKENS_) and self.parse_flag:
+            self.out_parse.close()
+        self.out_code.close()
+        self.la.close()
+
+
+    ## =====================================================================================
+    ##    The following functions help produce outputs for the parsing process only.
+    ## =====================================================================================
 
     # A helper function that calls the RatLexer's lexer() and stores
     # the Token result as an instance variable. If there are no Tokens
@@ -30,7 +101,7 @@ class RatParser:
         if not self.token:
             print("\tError: Ran out of tokens.")
             exit()
-        if _PRINT_TOKENS_:
+        if _PRINT_TOKENS_ and self.parse_flag:
             self.write_token()
 
     # Writes the current Token held by the RatParser into the output
@@ -42,25 +113,68 @@ class RatParser:
             print("\tError: No token available.")
             exit()
         type_str = TokenTypeStr[self.token.type]
-        self.outfile.write(f"Token: {type_str}".ljust(20) + f"Lexeme: {self.token.value}\n")
+        self.out_parse.write(f"Token: {type_str}".ljust(20) + f"Lexeme: {self.token.value}\n")
 
     # Write a string to the output file. The string will be indented
     # by four spaces.
     #
     # If _PRINT_PRODUCTIONS_ is False, this function will do nothing.
     def write_production(self, string):
-        if _PRINT_PRODUCTIONS_:
-            self.outfile.write("    " + string + "\n")
-
-    # Used to notify the user of an unexpected token. This will print
-    # an error message including the current token held by RatParser.
-    def notify_error(self):
-        print("\tError: Unexpected token:")
-        print("\t" + self.token.__repr__())
-        self.close_files()
-        exit()
+        if _PRINT_PRODUCTIONS_ and self.parse_flag:
+            self.out_parse.write("    " + string + "\n")
 
 
+    ## =====================================================================================
+    ##    The following functions are used to aid intermediate code generation.
+    ## =====================================================================================
+
+    # Check if an id is already inside the table
+    def is_id(self, id):
+        return id in self.sym_table
+
+    # Make a declaration for an identifier
+    def decl_id(self, id, id_type):
+        if self.is_id(id):
+            return False
+        self.sym_table[id] = (self.id_mem_addr, id_type)
+        self.id_mem_addr += 1
+        return True
+
+    # Return the address of the identifier if in the table, otherwise return -1
+    def get_address(self, id):
+        if self.is_id(id):
+            return self.sym_table[id][0]
+        return -1
+
+    def get_type(self, id):
+        if is_id(id):
+            return self.sym_table[id][1]
+        return -1
+
+    # Print all the identifiers in the table
+    def print_ids(self):
+        print("Identifier".ljust(15) + "Memory Location".ljust(20) + "Type")
+        for id in self.sym_table:
+            id_str = f"{id}".ljust(15)
+            loc_str = f"{self.sym_table[id][0]}".ljust(20)
+            type_str = "boolean" if self.sym_table[id][1] else "integer"
+            print(id_str + loc_str + type_str)
+
+    # Generate an output instruction line
+    def gen_instr(self, instr_type, arg):
+        if self.instr_addr >= 5000:
+            print("\tError: Instruction reached addr 5000")
+            exit()
+        new_instr = (self.instr_addr, instr_type, arg)
+        self.instructions.append(new_instr)
+        self.instr_addr += 1
+
+    def output_instr(self):
+        for instr in self.instructions:
+            self.out_code.write(str(instr[0]).ljust(6))
+            type_str = INSTR_TYPE[instr[1]]
+            self.out_code.write(type_str.ljust(8))
+            self.out_code.write(str(instr[2]))
 
 
     ## =====================================================================================
@@ -112,8 +226,10 @@ class RatParser:
     def declaration(self):
         if self.token.value in {"integer", "boolean"}:
             self.write_production("<Declaration> -> <Qualifier> <Identifier>")
-            self.qualifier()
+            tok_type = self.qualifier()
             if self.token.type == TokenIdentifier:
+                tok_id = self.token.value
+                self.decl_id(tok_id, tok_type)
                 self.lexer()
                 return
         self.notify_error()
@@ -123,11 +239,14 @@ class RatParser:
         if self.token.value == "integer":
             self.write_production("<Qualifier> -> integer")
             self.lexer()
+            return INTEGER_T
         elif self.token.value == "boolean":
             self.write_production("<Qualifier> -> boolean")
             self.lexer()
+            return BOOLEAN_T
         else:
-            self.notify_error
+            self.notify_error()
+            return None
 
     # <Declaration List Split>
     # This rule comes from factoring <Declaration List>
@@ -197,12 +316,14 @@ class RatParser:
     # <Assign>
     def assign(self):
         if self.token.type == TokenIdentifier:
+            tok_id = self.token.value
             self.write_production("<Assign> -> <Identifier> = <Expression> ;")
             self.lexer()
             if self.token.value == "=":
                 self.lexer()
                 self.expression()
                 if self.token.value == ";":
+
                     self.lexer()
                     return
         self.notify_error()

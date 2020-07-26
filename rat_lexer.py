@@ -99,6 +99,17 @@ class Token:
 
 
 class RatLexer:
+    def __init__(self, infile_name, outfile_name, lex_flag):
+        self.lex_flag = lex_flag
+        self.file = Reader(infile_name, "r")
+        if lex_flag:
+            self.outfile = open(outfile_name, "w")
+        self.char_col_dict = self.char_col_dict_init()
+
+    def close(self):
+        self.file.close()
+        if self.lex_flag:
+            self.outfile.close()
 
     # Build a dictionary for O(1) determination of column number
     # Some characters are grouped togther because they are functionally equivalent.
@@ -139,13 +150,6 @@ class RatLexer:
             return self.char_col_dict[char]
         return INVALID
 
-    def __init__(self, fname):
-        self.file = Reader(fname, "r")
-        self.char_col_dict = self.char_col_dict_init()
-
-    def close(self):
-        self.file.close()
-
     # Tries to create a token.
     # If the state indicates an identifier, try to see if it is a keyword.
     # charpos should be the position of the last character that is part of
@@ -153,11 +157,18 @@ class RatLexer:
     def create_token(self, state, lexeme, charpos):
         line = self.file.line()
         char = charpos - len(lexeme) + 1
+        new_token = None
         if state in Accepting:
             if Accepting[state] == TokenIdentifier and (lexeme in Keywords):
-                return Token(TokenKeyword, lexeme, line, char)
-            return Token(Accepting[state], lexeme, line, char)
-        return Token(TokenInvalid, lexeme, line, char)
+                new_token = Token(TokenKeyword, lexeme, line, char)
+            else:
+                new_token = Token(Accepting[state], lexeme, line, char)
+        else:
+            new_token = Token(TokenInvalid, lexeme, line, char)
+        if self.lex_flag:
+            self.outfile.write(new_token.__repr__())
+            self.outfile.write("\n")
+        return new_token
 
     # Eats up whitespace in the character stream
     # Will return the new character after the whitespaces and also
