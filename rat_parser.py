@@ -61,6 +61,9 @@ class RatParser:
         self.id_mem_addr = 5000
         self.sym_table = {}
 
+        # Prepare jump stack
+        self.jumpstack = []
+
         # TODO: Prepare ICG output
         self.out_code = open(out_code, "w")
         self.instructions = []
@@ -178,10 +181,27 @@ class RatParser:
         if self.instr_addr >= 5000:
             print("\tError: Instruction reached addr 5000")
             exit()
-        new_instr = (self.instr_addr, instr_type, arg)
+        new_instr = [self.instr_addr, instr_type, arg]
         self.instructions.append(new_instr)
         self.instr_addr += 1
 
+    # Add an instruction address to the jumpstack
+    # This is typically an instruction that later needs to be supplied an argument
+    def push_jumpstack(self, addr):
+        self.jumpstack.append(addr)
+
+    # Add an argument to a previous instruction
+    # This is necessary because sometimes we don't know the jump address.
+    # For example if an if-statement condition is false, we don't know
+    # how mant instructions are in the statement and where to jump past.
+    def back_patch(self, jump_addr):
+        instr_addr = self.jumpstack.pop()
+        # Since indices start at 0 but instructions start at 1
+        # we must subtract 1 to access the instruction at the given address
+        # Instructions are a 3-item list, so the arg is stored at index 2
+        self.instructions[instr_addr-1][2] = jump_addr
+
+    # Output all the instructions to the output file out_code
     def output_instr(self):
         for instr in self.instructions:
             self.out_code.write(str(instr[0]).ljust(6))
@@ -191,7 +211,7 @@ class RatParser:
             if arg != "nil":
                 self.out_code.write(str(instr[2]))
             self.out_code.write("\n")
-
+            
 
     ## =====================================================================================
     ##    The following functions represent the rules of the Rat20SU language.
@@ -213,6 +233,9 @@ class RatParser:
             self.statement_list()
             if self.token.value == "$$":
                 self.write_production("\nRat20SU Accepted")
+                # This label exists in case the program ended in an if statement or loop
+                # and needs something to jump to afterwards
+                self.gen_instr(LABEL, "nil")
                 return
         self.notify_error("Error: Expected $$", self.token)
 
@@ -371,7 +394,21 @@ class RatParser:
                 if self.token.value == ")":
                     self.lexer()
                     self.statement()
+                    # Store the address of this jump, it will be used for the "then" to jump past "else"
+                    addr = self.instr_addr
+                    self.gen_instr(JUMP, "nil")
+
+                    self.back_patch(self.instr_addr) # If the condition fails, it will jump to here
+                    # This is either the end of the if-statement, or the beginning of the "else" part
+                    self.gen_instr(LABEL, "nil")
                     self.if_split()
+
+                    # This is the end of the if-statement. We need to jump here from the end of "then"
+                    # This may be redundant if there was no "else", but that's okay. There is room for
+                    # improvement because we can get rid of potential redundancies.
+                    self.push_jumpstack(addr) # Add that previous jump to jumpstack
+                    self.back_patch(self.instr_addr) # back_patch it with the following label
+                    self.gen_instr(LABEL, "nil")
                 else:
                     self.notify_error("Error: Expected )", self.token)
             else:
@@ -395,6 +432,63 @@ class RatParser:
                 self.notify_error("Error: Expected fi", self.token)
         else:
             self.notify_error("Error: Expected fi or otherwise", self.token)
+    
+    # <While>
+    def while_rule(self):
+        if self.token.value == "while":
+            self.write_production("<While> -> while ( <Condition> ) <Statement>")
+            self.lexer()
+            instr_addr = self.instr_addr
+            self.gen_instr(LABEL, "nil")
+            if self.token.value == "(":
+                self.lexer()
+                self.condition()
+                if self.token.value == ")":
+                    self.lexer()
+                    self.statement()
+                    # The loop will always jump back to the label just before the condition
+                    self.gen_instr(JUMP, instr_addr)
+                    # If the condition fails, it will jump to the instruction following this point
+                    self.back_patch(self.instr_addr)
+                else:
+                    self.notify_error("Expected )", self.token)
+            else:
+                self.notify_error("Expected (", self.token)
+        else:
+            self.notify_error("Bug: while_rule()")
+
+    # <Condition>
+    def condition(self):
+        if self.token.value in {
+            "true", "false", "(", "-"
+            } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
+            self.expression()
+            op = self.relop()
+            self.expression()
+            self.gen_instr(op, "nil")
+            self.push_jumpstack(self.instr_addr)
+            self.gen_instr(JUMPZ, "nil")
+        else:
+            self.notify_error("Error: Expected start of expression", self.token)
+
+    # <Relop>
+    def relop(self):
+        if self.token.value == "==":
+            self.write_production("<Relop> -> ==")
+            self.lexer()
+            return EQU
+        elif self.token.value == ">":
+            self.write_production("<Relop> -> >")
+            self.lexer()
+            return GRT
+        elif self.token.value == "<":
+            self.write_production("<Relop> -> <")
+            self.lexer()
+            return LES
+        else:
+            self.notify_error("Error: Expected relop", self.token)
+            # If there's an error, use equal operator by default
+            return EQU
 
     # <Put>
     def put(self):
@@ -455,51 +549,6 @@ class RatParser:
                 self.notify_error("Error: Expected (", self.token)
         else:
             self.notify_error("Bug: get")
-    
-    # <While>
-    def while_rule(self):
-        if self.token.value == "while":
-            self.write_production("<While> -> while ( <Condition> ) <Statement>")
-            self.lexer()
-            if self.token.value == "(":
-                self.lexer()
-                self.condition()
-                if self.token.value == ")":
-                    self.lexer()
-                    self.statement()
-                    return
-        self.notify_error()
-
-    # <Condition>
-    def condition(self):
-        if self.token.value in {
-            "true", "false", "(", "-"
-            } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
-            self.expression()
-            op = self.relop()
-            self.expression()
-            self.gen_instr(op, "nil")
-        else:
-            self.notify_error("Error: Expected start of expression", self.token)
-
-    # <Relop>
-    def relop(self):
-        if self.token.value == "==":
-            self.write_production("<Relop> -> ==")
-            self.lexer()
-            return EQU
-        elif self.token.value == ">":
-            self.write_production("<Relop> -> >")
-            self.lexer()
-            return GRT
-        elif self.token.value == "<":
-            self.write_production("<Relop> -> <")
-            self.lexer()
-            return LES
-        else:
-            self.notify_error("Error: Expected relop", self.token)
-            # If there's an error, use equal operator by default
-            return EQU
 
     # <Expression>
     def expression(self):
@@ -598,12 +647,12 @@ class RatParser:
         elif self.token.value == "(":
             self.write_production("<Primary> -> ( <Expression> )")
             self.lexer()
-            expr_type = self.expression()
+            self.expression()
             if self.token.value == ")":
                 self.lexer()
-                return expr_type
+                return None
             else:
-                self.notify_error()
+                self.notify_error("Error: Expected )", self.token)
         elif self.token.value == "true":
             self.write_production("<Primary> -> true")
             # 1 represents true
