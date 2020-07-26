@@ -42,9 +42,10 @@ A compiler for the Rat20SU language that creates p-code, and a Rat20SU virtual m
 
     - Tuffix/Linux: python3 ratify.py test1.rat -o test1.out
     - Windows: py -3 ratify.py test1.rat -o test1.out
-
-    - If no command line arguments are given, the program will prompt you for file names. Please follow the command prompt.
-    - The input file must match your source code file name. The output file must also be provided. For the output file name, be careful not to use the name of an existing file, otherwise its contents will be replaced. 
+    
+    - To get all the outputs, try the following:
+        - Tuffix/Linux: python3 ratify.py test1.rat -ids -lex -parse
+        - Windows: py -3 ratify.py test1.rat -ids -lex -parse
 
 
 ## Collaborators
