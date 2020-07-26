@@ -38,11 +38,11 @@ A compiler for the Rat20SU language that creates p-code, and a Rat20SU virtual m
     - By default, the output filename will be the same as the input, but with a .out file extension.
         - Optionally provide a "-o" flag and then type the output filename as the next argument.
         - Optionally provide a "-ids" flag to print the symbol table to stdout
-        - Optionally provide a "-lex" flag to print a .lex output file
-        - Optionally provide a "-parse" flag to print a .parse output file
+        - Optionally provide a "-lex" flag to create a .lex output file
+        - Optionally provide a "-parse" flag to create a .parse output file
 
-    - Tuffix/Linux: python3 ratify.py test1.rat -o test1.out
-    - Windows: py -3 ratify.py test1.rat -o test1.out
+    - Tuffix/Linux: python3 ratify.py test1.rat -ids -o test1.out
+    - Windows: py -3 ratify.py test1.rat -ids -o test1.out
     
     - To get all the outputs, try the following:
         - Tuffix/Linux: python3 ratify.py test1.rat -ids -lex -parse
