@@ -1,9 +1,7 @@
-# This program gets takes an optional command line argument.
-# The argument should be the file name of a Rat20SU source code file.
-# If no command line argument is received, the user will be prompted
-# for a file name instead
-#
-# This is the first component of the Rat20SU programming language compiler.
+# This program compiles Rat20SU code into p-code that is read by the rat.py
+# virtual machine. The virtual machine uses a stack instead of registers.
+# For usage information, including how to enter command-line arguments into
+# this compiler, please see the README.md
 
 import os.path
 from sys import argv
