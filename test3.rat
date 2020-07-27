@@ -1,6 +1,6 @@
 [**
  * This program will approximate the square root of
- * a decimal number and print the result
+ * a positive decimal integer and print the result
  * as a binary number
   **]
 
@@ -82,10 +82,11 @@ while (i > 0) {
 
     [* if temp is even, rightmost bit is 0, so print a 0.
        otherwise, rightmost bit is 1, so print a 1. *]
-    if (((temp / 2) * 2) == temp)
-        put(one_constant);
-    otherwise
+    prev = temp / 2;
+    if (prev * 2 == temp)
         put(zero_constant);
+    otherwise
+        put(one_constant);
     fi
     temp = temp / 2;
 }

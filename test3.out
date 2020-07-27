@@ -103,7 +103,7 @@
 103   PUSHM     5002
 104   PUSHI     0
 105   GRT       
-106   JUMPZ     131
+106   JUMPZ     133
 107   PUSHM     5002
 108   PUSHI     1
 109   SUB       
@@ -111,21 +111,23 @@
 111   PUSHM     5005
 112   PUSHI     2
 113   DIV       
-114   PUSHI     2
-115   MUL       
-116   PUSHM     5005
-117   EQU       
-118   JUMPZ     122
-119   PUSHM     5000
-120   STDOUT    
-121   JUMP      125
-122   LABEL     
-123   PUSHM     5001
-124   STDOUT    
-125   LABEL     
-126   PUSHM     5005
-127   PUSHI     2
-128   DIV       
-129   POPM      5005
-130   JUMP      102
-131   LABEL     
+114   POPM      5004
+115   PUSHM     5004
+116   PUSHI     2
+117   MUL       
+118   PUSHM     5005
+119   EQU       
+120   JUMPZ     124
+121   PUSHM     5001
+122   STDOUT    
+123   JUMP      127
+124   LABEL     
+125   PUSHM     5000
+126   STDOUT    
+127   LABEL     
+128   PUSHM     5005
+129   PUSHI     2
+130   DIV       
+131   POPM      5005
+132   JUMP      102
+133   LABEL     
