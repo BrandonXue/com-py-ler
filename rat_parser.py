@@ -170,6 +170,7 @@ class RatParser:
     # Print all the identifiers in the table
     def print_ids(self):
         print("Identifier".ljust(15) + "Memory Location".ljust(20) + "Type")
+        print("".ljust(42, "-"))
         for id in self.sym_table:
             id_str = f"{id}".ljust(15)
             loc_str = f"{self.sym_table[id][0]}".ljust(20)
