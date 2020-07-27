@@ -79,7 +79,7 @@ def execute_line(pc):
         num1 = Stack.pop()
         if num2 == 0:
             err_exit("Division by 0 at line " + str(pc))
-        Stack.append(num1 / num2)
+        Stack.append(num1 // num2)
         return pc + 1
     elif instr_type == "GRT":
         num2 = Stack.pop()
