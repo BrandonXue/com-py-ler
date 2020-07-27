@@ -109,6 +109,7 @@ def main():
         rp.print_errors()
         
     if ids_flag: # if ids_flag is set, print the symbol table
+        print()
         rp.print_ids()
 
     rp.close_files() # Close all files
