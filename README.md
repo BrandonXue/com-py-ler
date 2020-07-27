@@ -1,9 +1,10 @@
 ## Introduction
-A compiler for the Rat20SU language that creates p-code, and a Rat20SU virtual machine that recognizes said p-code.
+A compiler for the Rat20SU language that uses a table-driven DFA lexer and recursive descent parsing as the front end.
+The compiler creates p-code for a virtual machine (rat.py).
 
 ## Usage Information
 1. Python 3 is required to run this program.
-    - The official Tuffix distribution should come with Python 3.
+    - The official Tuffix (Tuffy the Titan's Linux) distribution should come with Python 3.
     - To check if you have Python 3, open your terminal emulator and follow the instructions for your OS.
         - Tuffix/Linux: python3 --version
         - Windows: py --version
@@ -12,11 +13,14 @@ A compiler for the Rat20SU language that creates p-code, and a Rat20SU virtual m
    Only the "Required files" and "Input files" are needed to test the program.
    Here is a list of all the files:
     - "Required files" to run the program:
-        - ratify.py		----	the main script file
+        - ratify.py		        ----	the main script file for the compiler
         - lexer_constants.py	----	set definitions & constants
-        - rat_lexer.py		----	the RatLexer & Token classes
-        - rat_parser.py		----	the RatParser class
-        - reader.py		----	a wrapper class for file input
+        - rat_lexer.py		    ----	the RatLexer & Token classes
+        - rat_parser.py		    ----	the RatParser class
+        - reader.py		        ----	a wrapper class for file input
+
+    - Virtual machine:
+        - rat.py                ----    a virtual machine to recognize compiled p-code
 
     - "Input files" for testing the program:
         - test1.rat        ----    test file 1, <10 lines
