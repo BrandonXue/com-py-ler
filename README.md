@@ -1,6 +1,6 @@
 ## Introduction
 A compiler for the Rat20SU language that uses a table-driven DFA lexer and recursive descent parsing as the front end.
-The compiler creates p-code for a virtual machine (rat.py).
+The compiler uses syntax directed translation to create p-code for a virtual machine (rat.py).
 
 ## Usage Information
 1. Python 3 is required to run this program.
