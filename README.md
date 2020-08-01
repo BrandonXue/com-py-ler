@@ -13,11 +13,11 @@ The compiler uses syntax directed translation to create p-code for a virtual sta
    Only the "Required files" and "Input files" are needed to test the program.
    Here is a list of all the files:
     - "Required files" to run the program:
-        - ratify.py		        ----	the main script file for the compiler
+        - ratify.py		    ----	the main script file for the compiler
         - rat_constants.py	    ----	definitions & constants
         - rat_lexer.py		    ----	the RatLexer & Token classes
         - rat_parser.py		    ----	the RatParser class
-        - reader.py		        ----	a wrapper class for file input
+        - reader.py		    ----	a wrapper class for file input
 
     - Virtual machine:
         - rat.py                ----    a virtual machine to recognize compiled p-code
