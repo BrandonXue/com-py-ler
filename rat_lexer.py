@@ -1,6 +1,6 @@
 import sys
 
-from lexer_constants import *
+from rat_constants import *
 from reader import Reader
 
 # Character Type treated like an enum:
@@ -207,7 +207,13 @@ class RatLexer:
             # Finding a whitespace always stops the FSA unless we're in comment mode
             if state != 4 and state != 5:
                 if char in Whitespaces:
-                    return self.create_token(state, lexeme, self.file.char()-1)
+                    charpos = self.file.char()-1
+                    # If we just encountered a newline, we need to go back to find the char position
+                    if char == "\n":
+                        self.file.seek(self.file.tell()-1)
+                        charpos = self.file.char()
+                        self.file.read(1)
+                    return self.create_token(state, lexeme, charpos)
 
 
             # ********** STEP 2: **********
