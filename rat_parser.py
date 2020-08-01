@@ -514,7 +514,13 @@ class RatParser:
             if l_type != r_type:
                 self.notify_error(
                     "Error: Cannot compare " + VarTypes[l_type] + " with " + VarTypes[r_type],
-                    op_token)
+                    op_token
+                )
+            elif l_type == BOOLEAN_T and op in {GRT, LES}:
+                self.notify_error(
+                    "Error: Cannot perform " + op_token.value + " operation on booleans",
+                    op_token
+                )
 
             self.gen_instr(op, "nil")
             self.push_jumpstack(self.instr_addr)
