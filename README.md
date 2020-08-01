@@ -52,6 +52,10 @@ The compiler uses syntax directed translation to create p-code for a virtual sta
         - Tuffix/Linux: python3 ratify.py test1.rat --ids --lex --parse
         - Windows: py -3 ratify.py test1.rat --ids --lex --parse
 
+5. If you would like to run the compiled output, use the script for the virtual machine: rat.py
+    - Make sure the output file and the virtual machine are in the same directory.
+        - Tuffix/Linux: python3 rat.py test1.out
+        - Windows: py -3 rat.py test1.out
 
 ## Collaborators
 Brandon Xue, Henry Torres, Miguel Pulido
