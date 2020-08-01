@@ -263,7 +263,8 @@ class RatParser:
             if self.token.type == TokenIdentifier:
                 tok_id = self.token.value
                 if tok_id != NONE_T:
-                    self.decl_id(tok_id, tok_type)
+                    if not self.decl_id(tok_id, tok_type):
+                        self.notify_error("Error: Identifier has already been declared", self.token)
                 self.lexer()
             else:
                 self.notify_error("Error: Expected identifier", self.token)
