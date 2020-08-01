@@ -24,7 +24,7 @@ def main():
     infile_taken = False
     for i in range(arg_count):
         # Find invalid flags and ignore them
-        if argv[i].find("-") == 0 and argv[i] not in {"-lex", "-parse", "-ids", "-o"}:
+        if argv[i].find("-") == 0 and argv[i] not in {"--lex", "--parse", "--ids", "-o"}:
             pass
         # Find the python script argument and ignore it
         elif argv[i].find(".py") != -1:
@@ -34,13 +34,13 @@ def main():
             out_code = argv[i]
             code_flag = False
         # If -lex flag detected, the program will create a .lex output
-        elif argv[i] == "-lex":
+        elif argv[i] == "--lex":
             lex_flag = True
         # If -parse flag detected, the program will create a .parse output
-        elif argv[i] == "-parse":
+        elif argv[i] == "--parse":
             parse_flag = True
         # If -ids flag is detected, the program will later print the symbol table to stdout
-        elif argv[i] == "-ids":
+        elif argv[i] == "--ids":
             ids_flag = True
         # If -o flag detected, the next item will be treated as out_code name
         elif argv[i] == "-o":

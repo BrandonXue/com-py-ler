@@ -1,6 +1,6 @@
 ## Introduction
 A compiler for the Rat20SU language that uses a table-driven DFA lexer and recursive descent parsing as the front end.
-The compiler uses syntax directed translation to create p-code for a virtual machine (rat.py).
+The compiler uses syntax directed translation to create p-code for a virtual stack machine (rat.py).
 
 ## Usage Information
 1. Python 3 is required to run this program.
@@ -14,7 +14,7 @@ The compiler uses syntax directed translation to create p-code for a virtual mac
    Here is a list of all the files:
     - "Required files" to run the program:
         - ratify.py		        ----	the main script file for the compiler
-        - lexer_constants.py	----	set definitions & constants
+        - rat_constants.py	    ----	definitions & constants
         - rat_lexer.py		    ----	the RatLexer & Token classes
         - rat_parser.py		    ----	the RatParser class
         - reader.py		        ----	a wrapper class for file input
@@ -41,16 +41,16 @@ The compiler uses syntax directed translation to create p-code for a virtual mac
     - If command line arguments are not given, the program will prompt you once it starts running. In this case, please follow the command prompt.
     - By default, the output filename will be the same as the input, but with a .out file extension.
         - Optionally provide a "-o" flag and then type the output filename as the next argument.
-        - Optionally provide a "-ids" flag to print the symbol table to stdout
-        - Optionally provide a "-lex" flag to create a .lex output file
-        - Optionally provide a "-parse" flag to create a .parse output file
+        - Optionally provide a "--ids" flag to print the symbol table to stdout
+        - Optionally provide a "--lex" flag to create a .lex output file
+        - Optionally provide a "--parse" flag to create a .parse output file
 
-    - Tuffix/Linux: python3 ratify.py test1.rat -ids -o test1.out
-    - Windows: py -3 ratify.py test1.rat -ids -o test1.out
+    - Tuffix/Linux: python3 ratify.py test1.rat --ids -o test1.out
+    - Windows: py -3 ratify.py test1.rat --ids -o test1.out
     
     - To get all the outputs, try the following:
-        - Tuffix/Linux: python3 ratify.py test1.rat -ids -lex -parse
-        - Windows: py -3 ratify.py test1.rat -ids -lex -parse
+        - Tuffix/Linux: python3 ratify.py test1.rat --ids --lex --parse
+        - Windows: py -3 ratify.py test1.rat --ids --lex --parse
 
 
 ## Collaborators
