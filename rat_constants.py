@@ -54,6 +54,12 @@ INTEGER_T = 0
 BOOLEAN_T = 1
 NONE_T = 2
 
+VarTypes = [
+    "integer",
+    "boolean",
+    "none"
+]
+
 # Used these constants to encode the instruction type
 # as an integer instead of string to save space
 PUSHI = 1

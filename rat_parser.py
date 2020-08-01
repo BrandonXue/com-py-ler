@@ -383,9 +383,17 @@ class RatParser:
             addr = self.get_address(tok.value)
             self.write_production("<Assign> -> <Identifier> = <Expression> ;")
             self.lexer()
+            eq_sign = self.token
             if self.token.value == "=":
                 self.lexer()
-                self.expression()
+                expr_type = self.expression()
+
+                # Type check assignment
+                id_type = self.get_type(tok.value)
+                if id_type != expr_type:
+                    self.notify_error(
+                        "Error: cannot assign " + VarTypes[expr_type] + " to " + VarTypes[id_type],
+                        eq_sign)
 
                 # Check for semicolon. If no semicolon, assume the user forgot it and continue.
                 if self.token.value != ";":
@@ -498,9 +506,16 @@ class RatParser:
             "true", "false", "(", "-"
             } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
             self.write_production("<Condition> -> <Expression> <Relop> <Expression>")
-            self.expression()
-            op = self.relop()
-            self.expression()
+            l_type = self.expression()
+            op, op_token = self.relop()
+            r_type = self.expression()
+
+            # Type check comparison
+            if l_type != r_type:
+                self.notify_error(
+                    "Error: Cannot compare " + VarTypes[l_type] + " with " + VarTypes[r_type],
+                    op_token)
+
             self.gen_instr(op, "nil")
             self.push_jumpstack(self.instr_addr)
             self.gen_instr(JUMPZ, "nil")
@@ -510,22 +525,23 @@ class RatParser:
 
     # <Relop>
     def relop(self):
+        op_token = self.token
         if self.token.value == "==":
             self.write_production("<Relop> -> ==")
             self.lexer()
-            return EQU
+            return (EQU, op_token)
         elif self.token.value == ">":
             self.write_production("<Relop> -> >")
             self.lexer()
-            return GRT
+            return (GRT, op_token)
         elif self.token.value == "<":
             self.write_production("<Relop> -> <")
             self.lexer()
-            return LES
+            return (LES, op_token)
         else:
             self.notify_error("Error: Expected relop", self.token)
-            # If there's an error, use equal operator by default
-            return EQU
+            # If there's an error, return LABEL to signify error
+            return (LABEL, op_token)
 
     # <Put>
     def put(self):
@@ -601,29 +617,44 @@ class RatParser:
             "false", "(", "-", "true"
             } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
             self.write_production("<Expression> -> <Term> <Expression Prime>")
-            self.term()
-            self.expression_prime()
+            term_type = self.term()
+            self.expression_prime(term_type)
+            return term_type
         else:
             self.notify_error("Error: Invalid token", self.token)
             raise Exception()
 
     # <Expression Prime>
     # This rule comes from fixing the direct left recursion of <Expression>
-    def expression_prime(self):
+    def expression_prime(self, prev_term_type):
+        tok = self.token
         if self.token.value == "+":
             self.write_production("<Expression Prime> -> + <Term> <Expression Prime>")
             self.lexer()
-            self.term()
+            term_type = self.term()
+
+            # Type check addition
+            if term_type == BOOLEAN_T or prev_term_type == BOOLEAN_T:
+                self.notify_error("Error: Cannot add booleans", tok)
+
             self.gen_instr(ADD, "nil")
-            self.expression_prime()
+            self.expression_prime(term_type)
+            return term_type
         elif self.token.value == "-":
             self.write_production("<Expression Prime> -> - <Term> <Expression Prime>")
             self.lexer()
-            self.term()
+            term_type = self.term()
+
+            # Type check subtraction
+            if term_type == BOOLEAN_T or prev_term_type == BOOLEAN_T:
+                self.notify_error("Error: Cannot subtract booleans", tok)
+
             self.gen_instr(SUB, "nil")
-            self.expression_prime()
+            self.expression_prime(term_type)
+            return term_type
         else:
             self.write_production("<Expression Prime> -> epsilon")
+            return NONE_T
 
     # <Term>
     def term(self):
@@ -631,29 +662,44 @@ class RatParser:
             "true", "false", "(", "-"
             } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
             self.write_production("<Term> -> <Factor> <Term Prime>")
-            self.factor()
-            self.term_prime()
+            fact_type = self.factor()
+            self.term_prime(fact_type)
+            return fact_type
         else:
             self.notify_error("Error: Expected a factor", self.token)
             raise Exception()
 
     # <Term Prime>
     # This rule comes from fixing the direct left recursion of <Term>
-    def term_prime(self):
+    def term_prime(self, prev_fact_type):
+        tok = self.token
         if self.token.value == "*":
             self.write_production("<Term Prime> -> * <Factor> <Term Prime>")
             self.lexer()
-            self.factor()
+            fact_type = self.factor()
             self.gen_instr(MUL, "nil")
-            self.term_prime()
+            self.term_prime(fact_type)
+
+            # Type check multiplication
+            if fact_type == BOOLEAN_T or prev_fact_type == BOOLEAN_T:
+                self.notify_error("Error: Cannot multiply booleans", tok)
+
+            return fact_type
         elif self.token.value == "/":
             self.write_production("<Term Prime> -> / <Factor> <Term Prime>")
             self.lexer()
-            self.factor()
+            fact_type = self.factor()
             self.gen_instr(DIV, "nil")
-            self.term_prime()
+            self.term_prime(fact_type)
+
+            # Type check division
+            if fact_type == BOOLEAN_T or prev_fact_type == BOOLEAN_T:
+                self.notify_error("Error: Cannot divide booleans", tok)
+
+            return fact_type
         else:
             self.write_production("<Term Prime> -> epsilon")
+            return NONE_T
 
     # <Factor>
     def factor(self):
@@ -662,16 +708,20 @@ class RatParser:
             self.write_production("<Factor> -> - <Primary>")
             self.lexer()
             primary_type = self.primary()
+
+            # Type check negative one coefficient
             if primary_type == BOOLEAN_T:
-                self.notify_error("Error: Multiplying boolean by -1", tok)
+                self.notify_error("Error: Booleans cannot be negative", tok)
+
             # Primary will be on top of stack. Push a -1, then MUL to apply the negative
             self.gen_instr(PUSHI, -1)
             self.gen_instr(MUL, "nil")
+            return primary_type
         elif self.token.value in {
             "true", "false", "("
             } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
             self.write_production("<Factor> -> <Primary>")
-            self.primary()
+            return self.primary()
         else:
             self.notify_error("Error: Expected a factor", self.token)
             raise Exception()
@@ -695,22 +745,20 @@ class RatParser:
         elif self.token.value == "(":
             self.write_production("<Primary> -> ( <Expression> )")
             self.lexer()
-            self.expression()
+            expr_type = self.expression()
             if self.token.value == ")":
                 self.lexer()
-                return None
             else:
                 self.notify_error("Error: Expected )", self.token)
+            return expr_type
         elif self.token.value == "true":
             self.write_production("<Primary> -> true")
-            # 1 represents true
-            self.gen_instr(PUSHI, 1)
+            self.gen_instr(PUSHI, 1) # 1 represents true in the VM
             self.lexer()
             return BOOLEAN_T
         elif self.token.value == "false":
             self.write_production("<Primary> -> false")
-            # 0 represents false
-            self.gen_instr(PUSHI, 0)
+            self.gen_instr(PUSHI, 0) # 0 represents false in the VM
             self.lexer()
             return BOOLEAN_T
         else:
