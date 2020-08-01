@@ -7,7 +7,7 @@ import os.path
 from sys import argv
 
 from rat_parser import *
-from lexer_constants import *
+from rat_constants import *
 
 def main():
     # Check to see how many arguments the user passed
@@ -105,8 +105,7 @@ def main():
 
     rp.output_instr() # Output p-code
 
-    if rp.has_error():
-        rp.print_errors()
+    rp.print_errors()
         
     if ids_flag: # if ids_flag is set, print the symbol table
         print()
