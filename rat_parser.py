@@ -1,51 +1,5 @@
+from rat_constants import *
 from rat_lexer import *
-from lexer_constants import *
-
-_PRINT_TOKENS_ = True
-_PRINT_PRODUCTIONS_ = True
-
-INTEGER_T = 0
-BOOLEAN_T = 1
-NONE_T = 2
-
-# Used these constants to encode the instruction type
-# as an integer instead of string to save space
-PUSHI = 1
-PUSHM = 2
-POPM = 3
-STDOUT = 4
-STDIN = 5
-ADD = 6
-SUB = 7
-MUL = 8
-DIV = 9
-GRT = 10
-LES = 11
-EQU = 12
-JUMPZ = 13
-JUMP = 14
-LABEL = 15
-
-# Use this dict to decode instruction types into a string
-# so that the correct output can be printed
-INSTR_TYPE = [
-    "INVALID",
-    "PUSHI", # I1
-    "PUSHM", # I2
-    "POPM",  # I3
-    "STDOUT",# I4
-    "STDIN", # I5
-    "ADD",   # I6
-    "SUB",   # I7
-    "MUL",   # I8
-    "DIV",   # I9
-    "GRT",   # I10
-    "LES",   # I11
-    "EQU",   # I12
-    "JUMPZ", # I13
-    "JUMP",  # I14
-    "LABEL"  # I15
-]
 
 class RatParser:
     # Constructor
@@ -54,7 +8,7 @@ class RatParser:
     def __init__(self, infile_name, out_code, out_parse, out_lex, parse_flag, lex_flag):
         # Prepare parsing output
         self.parse_flag = parse_flag
-        if (_PRINT_PRODUCTIONS_ or _PRINT_TOKENS_) and parse_flag:
+        if (PRINT_PRODUCTIONS or PRINT_TOKENS) and parse_flag:
             self.out_parse = open(out_parse, "w")
 
         # Prepare symbol table
@@ -64,7 +18,7 @@ class RatParser:
         # Prepare jump stack
         self.jumpstack = []
 
-        # TODO: Prepare ICG output
+        # Prepare ICG output
         self.out_code = open(out_code, "w")
         self.instructions = []
         self.instr_addr = 1
@@ -72,16 +26,42 @@ class RatParser:
         # Prepare input
         self.la = RatLexer(infile_name, out_lex, lex_flag)
         self.token = None
+        self.prev_token = None
         self.lexer()
 
         # Prepare Error Log
         self.errors = []
     
+    # Enter panic mode and seek the given synchronizing token.
+    # If skip is True, the sync token is discarded.
+    # Any invalid tokens encountered will have an error reported.
+    def panic_seek(self, sync_set, skip=False, identifier=False):
+        if self.token == None:
+            exit()
+        print(sync_set)
+        while True:
+            if self.token.value in sync_set:
+                break
+            if self.token.type == TokenIdentifier and identifier:
+                break
+            self.lexer()
+            if self.token.type == TokenInvalid:
+                self.notify_error("Error: Invalid token", self.token)
+
+        if skip:
+            self.lexer()
+
     # Adds an error and/or a token to the error log
     def notify_error(self, msg="", token=None):
         self.errors.append((msg, token))
 
-    # Print all errors in the log
+    # Special error message for missing semicolons. Must pass prev_token as argument
+    def error_semicolon(self, token):
+        col = token.char + len(token.value)
+        msg = f"Error: Expected semicolon (;) at line {token.line} col {col}."
+        self.errors.append((msg, None))
+
+    # Print all errors in the log, if any
     def print_errors(self):
         for err in self.errors:
             print("\t" + err[0])
@@ -89,13 +69,9 @@ class RatParser:
                 print("\t" + err[1].__repr__())
             print()
 
-    # Find out if there are any errors
-    def has_error(self):
-        return len(self.errors) > 0
-
     # Close both the input and output files.
     def close_files(self):
-        if (_PRINT_PRODUCTIONS_ or _PRINT_TOKENS_) and self.parse_flag:
+        if (PRINT_PRODUCTIONS or PRINT_TOKENS) and self.parse_flag:
             self.out_parse.close()
         self.out_code.close()
         self.la.close()
@@ -110,13 +86,14 @@ class RatParser:
     # left, and error will be printed and the program will exit.
     # 
     # The Token type and lexeme will be printed to the output if 
-    # _PRINT_TOKENS_ is set to True
+    # PRINT_TOKENS is set to True
     def lexer(self):
+        self.prev_token = self.token
         self.token = self.la.lexer()
         if not self.token:
             print("\tError: Ran out of tokens.")
             exit()
-        if _PRINT_TOKENS_ and self.parse_flag:
+        if PRINT_TOKENS and self.parse_flag:
             self.write_token()
 
     # Writes the current Token held by the RatParser into the output
@@ -133,9 +110,9 @@ class RatParser:
     # Write a string to the output file. The string will be indented
     # by four spaces.
     #
-    # If _PRINT_PRODUCTIONS_ is False, this function will do nothing.
+    # If PRINT_PRODUCTIONS is False, this function will do nothing.
     def write_production(self, string):
-        if _PRINT_PRODUCTIONS_ and self.parse_flag:
+        if PRINT_PRODUCTIONS and self.parse_flag:
             self.out_parse.write("    " + string + "\n")
 
 
@@ -230,15 +207,24 @@ class RatParser:
         if self.token.value == "$$":
             self.write_production("<Rat20SU> -> $$ <Opt Declaration List> <Statement List> $$")
             self.lexer()
-            self.opt_declaration_list()
-            self.statement_list()
-            if self.token.value == "$$":
+        elif self.token.type == TokenInvalid:
+            self.notify_error("Error: Invalid token, expected $$", self.token)
+            self.lexer()
+        else: # If $$ not provided, assume the user forgot, notify error, and continue
+            self.notify_error("Error: Expected $$", self.token)
+
+        self.opt_declaration_list()
+        self.statement_list()
+
+        if self.token.value == "$$":
+            if len(self.errors) == 0:
                 self.write_production("\nRat20SU Accepted")
-                # This label exists in case the program ended in an if statement or loop
-                # and needs something to jump to afterwards
-                self.gen_instr(LABEL, "nil")
-                return
-        self.notify_error("Error: Expected $$", self.token)
+            else:
+                self.write_production("\n!!! Parsed With Errors !!!")
+        elif self.token.type == TokenInvalid:
+            self.notify_error("Error: Invalid token, expected $$", self.token)
+        else: # If $$ not provided, assume the user forgot, notify error, and continue
+            self.notify_error("Error: Expected $$", self.token)
 
     # <Opt Declaration List>
     def opt_declaration_list(self):
@@ -255,13 +241,17 @@ class RatParser:
     def declaration_list(self):
         if self.token.value in {"integer", "boolean"}:
             self.write_production("<Declaration List> -> <Declaration> ; <Declaration List Split>")
-            self.declaration()
-            if self.token.value == ";":
+            try:
+                self.declaration()
+            except: # Panic mode to ;
+                self.panic_seek({";"}, skip=False)
+
+            if self.token.value != ";":
+                self.error_semicolon(self.prev_token)
+            else: # If no semicolon, assume the user forgot it and continue.
                 self.lexer()
-                self.declaration_list_split()
-                return
-            else:
-                self.notify_error("Error: Expected ;", self.token)
+
+            self.declaration_list_split()
         else:
             self.notify_error("Bug: declaration_list()")
 
@@ -277,6 +267,7 @@ class RatParser:
                 self.lexer()
             else:
                 self.notify_error("Error: Expected identifier", self.token)
+                raise Exception()
         else:
             self.notify_error("Bug: declaration()")
 
@@ -291,8 +282,7 @@ class RatParser:
             self.lexer()
             return BOOLEAN_T
         else:
-            # Technically not reachable in PRDP
-            self.notify_error("Error: Expected integer or boolean qualifier")
+            self.notify_error("Bug: qualifier()") # shouldn't be reachable
             return NONE_T
 
     # <Declaration List Split>
@@ -310,44 +300,67 @@ class RatParser:
             "if", "while", "get", "put", "{"
             } or self.token.type == TokenIdentifier:
             self.write_production("<Statement List> -> <Statement> <Statement List Split>")
+ 
+        # Even if there is an error, proceed and let panic mode handle it.
+        try:
             self.statement()
-            self.statement_list_split()
-        else:
-            self.notify_error("Error: Expected statement", self.token)
+        except:
+            self.panic_seek({";", "}", "$", "$$", "$$$"}, skip=False)
+            if self.token.value == ";":
+                self.lexer()
+        self.statement_list_split()
 
     # <Statement>
     def statement(self):
         if self.token.value == "{":
             self.write_production("<Statement> -> <Compound>")
-            self.compound()
+            try:
+                self.compound()
+            except:
+                self.panic_seek({"}"}, skip=True)
         elif self.token.type == TokenIdentifier:
             self.write_production("<Statement> -> <Assign>")
-            self.assign()
+            try:
+                self.assign()
+            except:
+                self.panic_seek({"}"}, skip=True)
         elif self.token.value == "if":
             self.write_production("<Statement> -> <If>")
-            self.if_rule()
+            try:
+                self.if_rule()
+            except:
+                self.panic_seek("fi", skip=True)
         elif self.token.value == "put":
             self.write_production("<Statement> -> <Put>")
-            self.put()
+            try:
+                self.put()
+            except:
+                self.panic_seek({";"}, skip=True)
         elif self.token.value == "get":
             self.write_production("<Statement> -> <Get>")
-            self.get()
+            try:
+                self.get()
+            except:
+                self.panic_seek({";"}, skip=True)
         elif self.token.value == "while":
             self.write_production("<Statement> -> <While>")
             self.while_rule()
+        elif self.token.value in {"integer", "boolean"}:
+            self.notify_error("Error: Declaration not allowed in statement block", self.token)
+            raise Exception()
         else:
-            self.notify_error("Bug: statement()")
+            self.notify_error("Error: Unexpected token or start of statement", self.token)
+            raise Exception()
 
     # <Statement List Split>
     # This rule comes from factoring <Statement List>
     def statement_list_split(self):
-        if self.token.value in {
-            "if", "while", "get", "put", "{"
-            } or self.token.type == TokenIdentifier:
+        # If we encounter Follow(Statement_List_Split), then this goes to epsilon
+        if self.token.value in {"}", "$", "$$", "$$$"}: # Account for typos
+            self.write_production("<Statement List Split> -> epsilon")
+        else: # For all other lexemes, let statement_list handle it. Errors handled with panic mode
             self.write_production("<Statement List Split> -> <Statement List>")
             self.statement_list()
-        else:
-            self.write_production("<Statement List Split> -> epsilon")
 
     # <Compound>
     def compound(self):
@@ -355,10 +368,11 @@ class RatParser:
             self.write_production("<Compound> -> { <Statement List> }")
             self.lexer()
             self.statement_list()
-            if self.token.value == "}":
-                self.lexer()
-            else:
+            if self.token.value != "}":
                 self.notify_error("Error: Expected }", self.token)
+                raise Exception()
+            else: 
+                self.lexer()
         else:
             self.notify_error("Bug: compound()")
 
@@ -366,21 +380,28 @@ class RatParser:
     def assign(self):
         if self.token.type == TokenIdentifier:
             tok = self.token
+            addr = self.get_address(tok.value)
             self.write_production("<Assign> -> <Identifier> = <Expression> ;")
             self.lexer()
             if self.token.value == "=":
                 self.lexer()
                 self.expression()
-                if self.token.value == ";":
-                    addr = self.get_address(tok.value)
-                    if addr == -1:
-                        self.notify_error("Error: Use of undeclared identifier", tok)
-                    self.gen_instr(POPM, addr)
-                    self.lexer()
+
+                # Check for semicolon. If no semicolon, assume the user forgot it and continue.
+                if self.token.value != ";":
+                    self.error_semicolon(self.prev_token)
                 else:
-                    self.notify_error("Error: Expected ;", self.token)
+                    self.lexer()
+
+                if addr == -1:
+                    self.notify_error("Error: Use of undeclared identifier", tok)
+                self.gen_instr(POPM, addr)
+            elif addr == -1: # if no equal sign and address is invalid, assume the user didn't mean to make assignment
+                self.notify_error("Error: Unexpected token or start of statement", self.token)
+                raise Exception()
             else:
                 self.notify_error("Error: Expected =", self.token)
+                raise Exception()
         else:
             self.notify_error("Bug: assign()")
 
@@ -412,8 +433,10 @@ class RatParser:
                     self.gen_instr(LABEL, "nil")
                 else:
                     self.notify_error("Error: Expected )", self.token)
+                    raise Exception()
             else:
                 self.notify_error("Error: Expected (", self.token)
+                raise Exception()
         else:
             self.notify_error("Bug: if_rule()")
 
@@ -431,8 +454,10 @@ class RatParser:
                 self.lexer()
             else:
                 self.notify_error("Error: Expected fi", self.token)
+                raise Exception()
         else:
             self.notify_error("Error: Expected fi or otherwise", self.token)
+            raise Exception()
     
     # <While>
     def while_rule(self):
@@ -441,20 +466,29 @@ class RatParser:
             self.lexer()
             instr_addr = self.instr_addr
             self.gen_instr(LABEL, "nil")
+
             if self.token.value == "(":
                 self.lexer()
-                self.condition()
-                if self.token.value == ")":
-                    self.lexer()
-                    self.statement()
-                    # The loop will always jump back to the label just before the condition
-                    self.gen_instr(JUMP, instr_addr)
-                    # If the condition fails, it will jump to the instruction following this point
-                    self.back_patch(self.instr_addr)
-                else:
-                    self.notify_error("Expected )", self.token)
-            else:
+            else: # If there is an error, assume the user forgot the ( and continue
                 self.notify_error("Expected (", self.token)
+
+            try: # If there is an error with the condition, panic mode to the closing parentheses
+                self.condition()
+            except:
+                self.panic_seek({")"}, skip=False)
+
+            if self.token.value == ")":
+                self.lexer()
+            else: # If there is an error, continue directly to the statement
+                self.notify_error("Expected )", self.token)
+                self.panic_seek({"if", "while", "{", "get", "put"}, skip=False, identifier=True)
+
+            self.statement()
+            # The loop will always jump back to the label just before the condition
+            self.gen_instr(JUMP, instr_addr)
+            # If the condition fails, it will jump to the label
+            self.back_patch(self.instr_addr)
+            self.gen_instr(LABEL, "nil")
         else:
             self.notify_error("Bug: while_rule()")
 
@@ -463,6 +497,7 @@ class RatParser:
         if self.token.value in {
             "true", "false", "(", "-"
             } or self.token.type == TokenIdentifier or self.token.type == TokenInteger:
+            self.write_production("<Condition> -> <Expression> <Relop> <Expression>")
             self.expression()
             op = self.relop()
             self.expression()
@@ -471,6 +506,7 @@ class RatParser:
             self.gen_instr(JUMPZ, "nil")
         else:
             self.notify_error("Error: Expected start of expression", self.token)
+            raise Exception()
 
     # <Relop>
     def relop(self):
@@ -503,21 +539,25 @@ class RatParser:
                     self.lexer()
                     if self.token.value == ")":
                         self.lexer()
-                        if self.token.value == ";":
-                            self.lexer()
-                            addr = self.get_address(tok.value)
-                            if addr == -1:
-                                self.notify_error("Error: Use of undeclared identifier", tok)
-                            self.gen_instr(PUSHM, addr)
-                            self.gen_instr(STDOUT, "nil")
+                        # Check for semicolon. If no semicolon, assume the user forgot it and continue.
+                        if self.token.value != ";":
+                            self.error_semicolon(self.prev_token)
                         else:
-                            self.notify_error("Error: Expected ;", self.token)
+                            self.lexer()
+                        addr = self.get_address(tok.value)
+                        if addr == -1:
+                            self.notify_error("Error: Use of undeclared identifier", tok)
+                        self.gen_instr(PUSHM, addr)
+                        self.gen_instr(STDOUT, "nil")
                     else:
                         self.notify_error("Error: Expected )", self.token)
+                        raise Exception()
                 else:
                     self.notify_error("Error: Expected identifier", self.token)
+                    raise Exception()
             else:
                 self.notify_error("Error: Expected (", self.token)
+                raise Exception()
         else:
             self.notify_error("Bug: put")
 
@@ -533,21 +573,25 @@ class RatParser:
                     self.lexer()
                     if self.token.value == ")":
                         self.lexer()
-                        if self.token.value == ";":
-                            self.lexer()
-                            addr = self.get_address(tok.value)
-                            if addr == -1:
-                                self.notify_error("Error: Use of undeclared identifier", tok)
-                            self.gen_instr(STDIN, "nil")
-                            self.gen_instr(POPM, addr)
+                        # Check for semicolon. If no semicolon, assume the user forgot it and continue.
+                        if self.token.value != ";":
+                            self.error_semicolon(self.prev_token)
                         else:
-                            self.notify_error("Error: Expected ;", self.token)
+                            self.lexer()
+                        addr = self.get_address(tok.value)
+                        if addr == -1:
+                            self.notify_error("Error: Use of undeclared identifier", tok)
+                        self.gen_instr(STDIN, "nil")
+                        self.gen_instr(POPM, addr)
                     else:
                         self.notify_error("Error: Expected )", self.token)
+                        raise Exception()
                 else:
                     self.notify_error("Error: Expected identifier", self.token)
+                    raise Exception()
             else:
                 self.notify_error("Error: Expected (", self.token)
+                raise Exception()
         else:
             self.notify_error("Bug: get")
 
@@ -560,7 +604,8 @@ class RatParser:
             self.term()
             self.expression_prime()
         else:
-            self.notify_error("Error")
+            self.notify_error("Error: Invalid token", self.token)
+            raise Exception()
 
     # <Expression Prime>
     # This rule comes from fixing the direct left recursion of <Expression>
@@ -590,6 +635,7 @@ class RatParser:
             self.term_prime()
         else:
             self.notify_error("Error: Expected a factor", self.token)
+            raise Exception()
 
     # <Term Prime>
     # This rule comes from fixing the direct left recursion of <Term>
@@ -628,6 +674,7 @@ class RatParser:
             self.primary()
         else:
             self.notify_error("Error: Expected a factor", self.token)
+            raise Exception()
 
     # <Primary>
     def primary(self):
@@ -668,4 +715,4 @@ class RatParser:
             return BOOLEAN_T
         else:
             self.notify_error("Error: Invalid primary", self.token)
-            return None
+            raise Exception()
