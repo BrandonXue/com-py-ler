@@ -1,5 +1,5 @@
 ## Introduction
-A compiler for the Rat20SU language that uses a table-driven DFA lexer and recursive descent parsing as the front end.
+A compiler for a simple programming language that uses a table-driven DFA lexer and recursive descent parsing as the front end.
 The compiler uses syntax directed translation to create p-code for a virtual stack machine (rat.py).
 
 ## Usage Information
